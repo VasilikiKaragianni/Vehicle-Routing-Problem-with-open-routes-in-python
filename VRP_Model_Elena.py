@@ -86,13 +86,16 @@ class Model:
         print(len(self.all_nodes))
         self.customers.sort(key=lambda x: x.demand, reverse=True)
 
+        served  = 0
         for cust in self.customers:
             found = False
 
-            if self.numberOf1500 > 0:
-                minTime = 3.5
+            if self.numberOf1500 > 1:
+                minTime = 3.6
                 timeAdded = 0
                 distanceAdded = 0
+                routeToBeInserted = None
+                minEmptySpace = 1501
                 for route in sol.all_routes:
                     if cust.demand + route.load <= 1500:
                         lastcust = route.sequenceOfNodes[-1]
@@ -100,12 +103,17 @@ class Model:
                         j = lastcust.id
                         if self.time[j][i] + route.time <= 3.5:
                             found = True
-                            if route.timeleft < minTime:
-                                minTime = route.timeleft
+                            # print(found)
+                            # print(route.timeleft)
+                            # print(minTime)
+                            if (1500 - route.load) < minEmptySpace:
+                            # if route.timeleft < minTime:
+                            #     minTime = route.timeleft
+                                minEmptySpace = 1500 - route.load
                                 routeToBeInserted = route
                                 timeAdded = self.time[j][i]
                                 distanceAdded = self.distance[j][i]
-
+                # print(found)
                 if found == True:
                     routeToBeInserted.load += cust.demand
                     routeToBeInserted.time += timeAdded
@@ -119,7 +127,7 @@ class Model:
                     sol.all_routes.append(newRoute)
                     self.numberOf1500 -= 1
 
-                    lastcust = route[-1]
+                    lastcust = route.sequenceOfNodes[-1]
                     i = cust.id
                     j = lastcust.id
                     timeAdded = self.time[j][i]
@@ -131,10 +139,12 @@ class Model:
                     cust.isRouted = True
                     newRoute.sequenceOfNodes.append(cust)
 
+                served +=1
             elif self.numberOf1200 > 0:
                 minTime = 3.5
                 timeAdded = 0
                 distanceAdded = 0
+                minEmptySpace = 1201
                 for route in sol.all_routes:
                     if cust.demand + route.load <= 1500:
                         lastcust = route.sequenceOfNodes[-1]
@@ -142,8 +152,10 @@ class Model:
                         j = lastcust.id
                         if self.time[j][i] + route.time <= 3.5:
                             found = True
-                            if route.timeleft < minTime:
-                                minTime = route.timeleft
+                            if (1200 - route.load) < minEmptySpace:
+                            # if route.timeleft < minTime:
+                            #     minTime = route.timeleft
+                                minEmptySpace = 1200 - route.load
                                 routeToBeInserted = route
                                 timeAdded = self.time[j][i]
                                 distanceAdded = self.distance[j][i]
@@ -156,12 +168,12 @@ class Model:
                     cust.isRouted = True
                     routeToBeInserted.sequenceOfNodes.append(cust)
                 else:
-                    newRoute = Route(1500)
+                    newRoute = Route(1200)
                     newRoute.sequenceOfNodes.append(depot)
                     sol.all_routes.append(newRoute)
                     self.numberOf1200 -= 1
 
-                    lastcust = route[-1]
+                    lastcust = route.sequenceOfNodes[-1]
                     i = cust.id
                     j = lastcust.id
                     timeAdded = self.time[j][i]
@@ -172,12 +184,30 @@ class Model:
                     newRoute.distance += distanceAdded
                     cust.isRouted = True
                     newRoute.sequenceOfNodes.append(cust)
+
+                served += 1
             else:
                 break
 
         print(len(sol.all_routes))
         print(len(self.customers))
         print(len(self.all_nodes))
+
+        for ct in self.customers:
+            print(ct.demand)
+        # for rt in sol.all_routes:
+        #     print(rt.load, rt.capacity, rt.time, rt.timeleft, rt.maxtime, rt.distance)
+        #
+        # for rt in sol.all_routes:
+        #     print(rt.load, rt.capacity, rt.time, rt.timeleft, rt.maxtime, rt.distance)
+        #     for n in rt.sequenceOfNodes:
+        #         print(n.id)
+        #
+        # for ct in self.customers:
+        #     print(ct.isRouted)
+        print(served)
+
+
 
 class Node:
     def __init__(self, id, st, dem, xx, yy):
@@ -214,6 +244,5 @@ class Solution:
         self.all_routes = []
         self.allTime = 0
         self.allDist = 0
-
 
 
