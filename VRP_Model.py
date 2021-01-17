@@ -49,7 +49,7 @@ class Model:
 
 class Node:
     def __init__(self, id, st, dem, xx, yy):
-        self.id = id
+        self.ID = id
         self.service_time = st
         self.demand = dem
         self.x = xx
@@ -63,7 +63,7 @@ class Route:
         ##self.sequenceOfNodes.append(dp)
         self.capacity = cap
         self.load = 0
-        self.maxtime = 3.5
+        # self.maxtime = 3.5
         self.time = 0
         self.distance = 0
-
+        self.cost = 0
