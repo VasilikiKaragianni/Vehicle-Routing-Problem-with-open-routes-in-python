@@ -15,6 +15,8 @@ class RelocationMove(object):
         self.targetNodePosition = None
         self.costChangeOriginRt = None
         self.costChangeTargetRt = None
+        self.originRtTimeChange = None
+        self.targetRtTimeChange = None
         self.moveCost = None
 
     def Initialize(self):
@@ -24,6 +26,8 @@ class RelocationMove(object):
         self.targetNodePosition = None
         self.costChangeOriginRt = None
         self.costChangeTargetRt = None
+        self.originRtTimeChange = None
+        self.targetRtTimeChange = None
         self.moveCost = 10 ** 9
 
 class Solver:
@@ -136,12 +140,21 @@ class Solver:
                 else:
                     terminationCondition = True
             localSearchIterator += 1
-        print(counter)
+        # print(counter)
         for i in range(len(self.sol.routes)):
             rt:Route = self.sol.routes[i]
+            print(rt.capacity)
+            print(rt.load)
+            print(rt.time)
             for j in range(len(rt.sequenceOfNodes)):
                 print(rt.sequenceOfNodes[j].ID, end=' ',)
+                # print(rt.sequenceOfNodes[j].isRouted)
             print("\n")
+        print("hiiiiiiiiiiiiiiiiiiiiiiiii")
+        print(self.timeMatrix[0][53]+self.timeMatrix[53][37]+self.timeMatrix[37][96])
+        print(self.timeMatrix[0][46])
+        print(self.timeMatrix[0][3] + self.timeMatrix[3][23] + self.timeMatrix[23][8])
+        print(self.timeMatrix[0][72] + self.timeMatrix[72][31] + self.timeMatrix[31][2]+ self.timeMatrix[2][91] + self.timeMatrix[91][51])
 
         # print(len(self.sol.routes))
 
@@ -207,20 +220,21 @@ class Solver:
                         if rt1 != rt2:
                             rt1time = rt1.time + originRtTimeChange
                             rt2time = rt2.time + targetRtTimeChange
-                            if rt1.time + originRtTimeChange > 3.5:
+                            if rt1time > 3.5:
                                 continue
-                            if rt2.time + targetRtTimeChange > 3.5:
+                            if rt2time > 3.5:
                                 continue
                         if rt1 == rt2:
                             rtfull = rt1.time + originRtTimeChange + targetRtTimeChange
-                            if rt1.time + originRtTimeChange + targetRtTimeChange > 3.5:
+                            if rtfull > 3.5:
                                 continue
 
                         moveCost = costAdded - costRemoved
 
                         if (moveCost < rm.moveCost):
                             self.StoreBestRelocationMove(originRouteIndex, targetRouteIndex, originNodeIndex,
-                                                         targetNodeIndex, moveCost, originRtCostChange, targetRtCostChange, rm)
+                                                         targetNodeIndex, moveCost, originRtCostChange, targetRtCostChange,
+                                                         originRtTimeChange, targetRtTimeChange,rm)
 
     def ApplyRelocationMove(self, rm: RelocationMove):
 
@@ -238,6 +252,7 @@ class Solver:
             else:
                 targetRt.sequenceOfNodes.insert(rm.targetNodePosition + 1, B)
 
+            originRt.time += rm.originRtTimeChange + rm.targetRtTimeChange
             originRt.cost += rm.moveCost
         else:
             del originRt.sequenceOfNodes[rm.originNodePosition]
@@ -246,6 +261,8 @@ class Solver:
             targetRt.cost += rm.costChangeTargetRt
             originRt.load -= B.demand
             targetRt.load += B.demand
+            originRt.time += rm.originRtTimeChange
+            targetRt.time += rm.targetRtTimeChange
 
         self.sol.cost += rm.moveCost
 
@@ -258,7 +275,7 @@ class Solver:
     def InitializeOperators(self, rm):
         rm.Initialize()
 
-    def StoreBestRelocationMove(self, originRouteIndex, targetRouteIndex, originNodeIndex, targetNodeIndex, moveCost, originRtCostChange, targetRtCostChange, rm:RelocationMove):
+    def StoreBestRelocationMove(self, originRouteIndex, targetRouteIndex, originNodeIndex, targetNodeIndex, moveCost, originRtCostChange, targetRtCostChange, originRtTimeChange, targetRtTimeChange,  rm:RelocationMove):
         rm.originRoutePosition = originRouteIndex
         rm.originNodePosition = originNodeIndex
         rm.targetRoutePosition = targetRouteIndex
@@ -266,3 +283,5 @@ class Solver:
         rm.costChangeOriginRt = originRtCostChange
         rm.costChangeTargetRt = targetRtCostChange
         rm.moveCost = moveCost
+        rm.originRtTimeChange = originRtTimeChange
+        rm.targetRtTimeChange = targetRtTimeChange
