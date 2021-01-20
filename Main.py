@@ -1,26 +1,11 @@
-from VRP_Model_Project import *
+from Solver import *
 
-mod1 = Model()
-mod1.test()
-mod1.BuildModel()
-
-mod1.test()
-mod1.bestfit()
-sol2 = Solution()
-sol2.PrintAllRoutes()
-# r = Route(0)
-# s = Solution()
-# r.BuildRoutes(s.all_routes)
-
-# for i in range(0, len(mod.all_nodes)):
-#     print(mod.all_nodes[i])
-
-# for i in range(0, len(mod.all_nodes)):
-#     for j in range(0, len(mod.all_nodes)):
-#         print(mod.distance[i][j])
-#
-# for cust in mod.customers:
-#     print(cust.id)
-
-# for route in s.all_routes:
-#     print(route.capacity)
+m = Model ()
+m.BuildModel()
+s = Solver(m)
+solution = s.ApplyNearestNeighborMethod()
+print(s.objective(solution))
+solution2 = s.LocalSearch()
+print(s.objective(solution2))
+# solution3 = s.VND()
+# print(s.objective(solution3))
