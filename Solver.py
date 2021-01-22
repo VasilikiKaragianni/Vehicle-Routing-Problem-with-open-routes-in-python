@@ -87,6 +87,7 @@ class Solver:
         self.solution_list = []
         self.time_list = []
         self.sol = Solution()
+        self.bestSolution = Solution()
         self.route = None
         self.searchTrajectory = []
 
@@ -111,6 +112,7 @@ class Solver:
             isRouted[0] = True
             total_demand = 0
             total_time = 0
+            total_cost = 0
             position = 0
             while total_demand <= capacity and total_time <= 3.5:
                 min1 = 100000000000
@@ -132,6 +134,7 @@ class Solver:
                     a = self.allNodes[position]
                     total_demand += a.demand
                     total_time += self.timeMatrix[node][position]
+                    total_cost += self.distanceMatrix[node][position]
                     node = position
                 else:
                     break
@@ -142,6 +145,7 @@ class Solver:
             self.route.time = total_time
             self.solution_list.append(solution)
             self.sol.routes.append(self.route)
+            self.sol.cost += total_cost
             self.time_list.append(total_time)
             SolDrawer.draw(t,self.sol,self.allNodes)
 
@@ -178,7 +182,7 @@ class Solver:
         while terminationCondition is False:
 
             SolDrawer.draw(localSearchIterator, self.sol, self.allNodes)
-            self.InitializeOperators(rm,sm,top)
+            self.InitializeOperators(rm, sm, top)
             # Relocations
             # if operator == 0:
             self.FindBestRelocationMove(rm)
@@ -212,9 +216,11 @@ class Solver:
         # print(len(self.sol.routes))
 
     def cloneRoute(self, rt: Route):
-        cloned = Route(self.capacity)
+        cloned = Route(rt.capacity)
         cloned.cost = rt.cost
         cloned.load = rt.load
+        cloned.time = rt.time
+        cloned.distance = rt.distance
         cloned.sequenceOfNodes = rt.sequenceOfNodes.copy()
         return cloned
 
@@ -239,71 +245,71 @@ class Solver:
                                 targetNodeIndex == originNodeIndex or targetNodeIndex == originNodeIndex - 1):
                             continue
 
-                        costEvaluated = False
-
-                        A = rt1.sequenceOfNodes[originNodeIndex - 1]
-                        B = rt1.sequenceOfNodes[originNodeIndex]
-                        F = rt2.sequenceOfNodes[targetNodeIndex]
-
-                        if (rt1.sequenceOfNodes[originNodeIndex] == rt1.sequenceOfNodes[-1]):  # if originNode is the last Node of rt1
-                            if rt1 != rt2:
-                                if (rt2.sequenceOfNodes[targetNodeIndex] == rt2.sequenceOfNodes[-1]):  # if targetNode is the last Node of rt2
-                                    costAdded = self.distanceMatrix[F.ID][B.ID]
-                                    costRemoved = self.distanceMatrix[A.ID][B.ID]
-                                    originRtCostChange = -self.distanceMatrix[A.ID][B.ID]
-                                    targetRtCostChange = self.distanceMatrix[F.ID][B.ID]
-                                    originRtTimeChange = -self.timeMatrix[A.ID][B.ID]
-                                    targetRtTimeChange = self.timeMatrix[F.ID][B.ID]
-                                    costEvaluated = True
-                                else:
-                                    # break
-                                    # if targetNode is NOT the last Node of rt2
-                                    G = rt2.sequenceOfNodes[targetNodeIndex + 1]
-
-                                    costAdded = self.distanceMatrix[F.ID][B.ID] + self.distanceMatrix[B.ID][G.ID]
-                                    costRemoved = self.distanceMatrix[A.ID][B.ID] + self.distanceMatrix[F.ID][G.ID]
-                                    originRtCostChange = -self.distanceMatrix[A.ID][B.ID]
-                                    targetRtCostChange = self.distanceMatrix[F.ID][G.ID] \
-                                                         - self.distanceMatrix[F.ID][B.ID] - self.distanceMatrix[B.ID][G.ID]
-                                    originRtTimeChange =-self.timeMatrix[A.ID][B.ID]
-                                    targetRtTimeChange = self.timeMatrix[F.ID][G.ID] - self.timeMatrix[F.ID][B.ID] - \
-                                                         self.timeMatrix[B.ID][G.ID]
-                                    costEvaluated = True
-                        else:
-                            C = rt1.sequenceOfNodes[originNodeIndex + 1]
-
-                        if (costEvaluated == False) and (rt1.sequenceOfNodes[originNodeIndex] != rt1.sequenceOfNodes[
-                            -1]):  # if originNode is NOT the last Node of rt1
-                            if (rt2.sequenceOfNodes[targetNodeIndex] == rt2.sequenceOfNodes[
-                                -1]):  # if targetNode is the last Node of rt2
-                                costAdded = self.distanceMatrix[A.ID][B.ID] + self.distanceMatrix[B.ID][C.ID]
-                                costRemoved = self.distanceMatrix[A.ID][C.ID] + self.distanceMatrix[F.ID][B.ID]
-                                originRtCostChange = self.distanceMatrix[A.ID][C.ID] - self.distanceMatrix[A.ID][B.ID] - \
-                                                     self.distanceMatrix[B.ID][C.ID]
-                                targetRtCostChange = self.distanceMatrix[F.ID][B.ID]
-                                originRtTimeChange = self.timeMatrix[A.ID][C.ID] - self.timeMatrix[A.ID][B.ID] - \
-                                                     self.timeMatrix[B.ID][C.ID]
-                                targetRtTimeChange = self.timeMatrix[F.ID][B.ID]
-                                costEvaluated = True
-                            else:
-                                G = rt2.sequenceOfNodes[targetNodeIndex + 1]
-
-
-                        if costEvaluated == False:
-                            costAdded = self.distanceMatrix[A.ID][C.ID] + self.distanceMatrix[F.ID][B.ID] + \
-                                        self.distanceMatrix[B.ID][G.ID]
-                            costRemoved = self.distanceMatrix[A.ID][B.ID] + self.distanceMatrix[B.ID][C.ID] + \
-                                          self.distanceMatrix[F.ID][G.ID]
-
-                            originRtCostChange = self.distanceMatrix[A.ID][C.ID] - self.distanceMatrix[A.ID][B.ID] - \
-                                                 self.distanceMatrix[B.ID][C.ID]
-                            targetRtCostChange = self.distanceMatrix[F.ID][B.ID] + self.distanceMatrix[B.ID][G.ID] - \
-                                                 self.distanceMatrix[F.ID][G.ID]
-                            originRtTimeChange = self.timeMatrix[A.ID][C.ID] - self.timeMatrix[A.ID][B.ID] - \
-                                                 self.timeMatrix[B.ID][C.ID]
-                            targetRtTimeChange = self.timeMatrix[F.ID][B.ID] + self.timeMatrix[B.ID][G.ID] - \
-                                                 self.timeMatrix[F.ID][G.ID]
-
+                        # costEvaluated = False
+                        #
+                        # A = rt1.sequenceOfNodes[originNodeIndex - 1]
+                        # B = rt1.sequenceOfNodes[originNodeIndex]
+                        # F = rt2.sequenceOfNodes[targetNodeIndex]
+                        #
+                        # if (rt1.sequenceOfNodes[originNodeIndex] == rt1.sequenceOfNodes[-1]):  # if originNode is the last Node of rt1
+                        #     if rt1 != rt2:
+                        #         if (rt2.sequenceOfNodes[targetNodeIndex] == rt2.sequenceOfNodes[-1]):  # if targetNode is the last Node of rt2
+                        #             costAdded = self.distanceMatrix[F.ID][B.ID]
+                        #             costRemoved = self.distanceMatrix[A.ID][B.ID]
+                        #             originRtCostChange = -self.distanceMatrix[A.ID][B.ID]
+                        #             targetRtCostChange = self.distanceMatrix[F.ID][B.ID]
+                        #             originRtTimeChange = -self.timeMatrix[A.ID][B.ID]
+                        #             targetRtTimeChange = self.timeMatrix[F.ID][B.ID]
+                        #             costEvaluated = True
+                        #         else:
+                        #             # break
+                        #             # if targetNode is NOT the last Node of rt2
+                        #             G = rt2.sequenceOfNodes[targetNodeIndex + 1]
+                        #
+                        #             costAdded = self.distanceMatrix[F.ID][B.ID] + self.distanceMatrix[B.ID][G.ID]
+                        #             costRemoved = self.distanceMatrix[A.ID][B.ID] + self.distanceMatrix[F.ID][G.ID]
+                        #             originRtCostChange = -self.distanceMatrix[A.ID][B.ID]
+                        #             targetRtCostChange = self.distanceMatrix[F.ID][G.ID] \
+                        #                                  - self.distanceMatrix[F.ID][B.ID] - self.distanceMatrix[B.ID][G.ID]
+                        #             originRtTimeChange =-self.timeMatrix[A.ID][B.ID]
+                        #             targetRtTimeChange = self.timeMatrix[F.ID][G.ID] - self.timeMatrix[F.ID][B.ID] - \
+                        #                                  self.timeMatrix[B.ID][G.ID]
+                        #             costEvaluated = True
+                        # else:
+                        #     C = rt1.sequenceOfNodes[originNodeIndex + 1]
+                        #
+                        # if (costEvaluated == False) and (rt1.sequenceOfNodes[originNodeIndex] != rt1.sequenceOfNodes[
+                        #     -1]):  # if originNode is NOT the last Node of rt1
+                        #     if (rt2.sequenceOfNodes[targetNodeIndex] == rt2.sequenceOfNodes[
+                        #         -1]):  # if targetNode is the last Node of rt2
+                        #         costAdded = self.distanceMatrix[A.ID][B.ID] + self.distanceMatrix[B.ID][C.ID]
+                        #         costRemoved = self.distanceMatrix[A.ID][C.ID] + self.distanceMatrix[F.ID][B.ID]
+                        #         originRtCostChange = self.distanceMatrix[A.ID][C.ID] - self.distanceMatrix[A.ID][B.ID] - \
+                        #                              self.distanceMatrix[B.ID][C.ID]
+                        #         targetRtCostChange = self.distanceMatrix[F.ID][B.ID]
+                        #         originRtTimeChange = self.timeMatrix[A.ID][C.ID] - self.timeMatrix[A.ID][B.ID] - \
+                        #                              self.timeMatrix[B.ID][C.ID]
+                        #         targetRtTimeChange = self.timeMatrix[F.ID][B.ID]
+                        #         costEvaluated = True
+                        #     else:
+                        #         G = rt2.sequenceOfNodes[targetNodeIndex + 1]
+                        #
+                        #
+                        # if costEvaluated == False:
+                        #     costAdded = self.distanceMatrix[A.ID][C.ID] + self.distanceMatrix[F.ID][B.ID] + \
+                        #                 self.distanceMatrix[B.ID][G.ID]
+                        #     costRemoved = self.distanceMatrix[A.ID][B.ID] + self.distanceMatrix[B.ID][C.ID] + \
+                        #                   self.distanceMatrix[F.ID][G.ID]
+                        #
+                        #     originRtCostChange = self.distanceMatrix[A.ID][C.ID] - self.distanceMatrix[A.ID][B.ID] - \
+                        #                          self.distanceMatrix[B.ID][C.ID]
+                        #     targetRtCostChange = self.distanceMatrix[F.ID][B.ID] + self.distanceMatrix[B.ID][G.ID] - \
+                        #                          self.distanceMatrix[F.ID][G.ID]
+                        #     originRtTimeChange = self.timeMatrix[A.ID][C.ID] - self.timeMatrix[A.ID][B.ID] - \
+                        #                          self.timeMatrix[B.ID][C.ID]
+                        #     targetRtTimeChange = self.timeMatrix[F.ID][B.ID] + self.timeMatrix[B.ID][G.ID] - \
+                        #                          self.timeMatrix[F.ID][G.ID]
+                        #
                         # A = rt1.sequenceOfNodes[originNodeIndex - 1]
                         # B = rt1.sequenceOfNodes[originNodeIndex]
                         # if (rt1.sequenceOfNodes[originNodeIndex] == rt1.sequenceOfNodes[-1]):
@@ -316,24 +322,31 @@ class Solver:
                         #     G = rt2.sequenceOfNodes[targetNodeIndex]
                         # else:
                         #     G = rt2.sequenceOfNodes[targetNodeIndex + 1]
-                        #
-                        # if rt1 != rt2:
-                        #     if rt2.load + B.demand > rt2.capacity:
-                        #         continue
-                        #
-                        # costAdded = self.distanceMatrix[A.ID][C.ID] + self.distanceMatrix[F.ID][B.ID] + \
-                        #             self.distanceMatrix[B.ID][G.ID]
-                        # costRemoved = self.distanceMatrix[A.ID][B.ID] + self.distanceMatrix[B.ID][C.ID] + \
-                        #               self.distanceMatrix[F.ID][G.ID]
-                        #
-                        # originRtCostChange = self.distanceMatrix[A.ID][C.ID] - self.distanceMatrix[A.ID][B.ID] - \
-                        #                      self.distanceMatrix[B.ID][C.ID]
-                        # targetRtCostChange = self.distanceMatrix[F.ID][B.ID] + self.distanceMatrix[B.ID][G.ID] - \
-                        #                      self.distanceMatrix[F.ID][G.ID]
-                        # originRtTimeChange = self.timeMatrix[A.ID][C.ID] - self.timeMatrix[A.ID][B.ID] - \
-                        #                      self.timeMatrix[B.ID][C.ID]
-                        # targetRtTimeChange = self.timeMatrix[F.ID][B.ID] + self.timeMatrix[B.ID][G.ID] - \
-                        #                      self.timeMatrix[F.ID][G.ID]
+
+                        A = rt1.sequenceOfNodes[originNodeIndex - 1]
+                        B = rt1.sequenceOfNodes[originNodeIndex]
+                        C = rt1.sequenceOfNodes[originNodeIndex + 1]
+
+                        F = rt2.sequenceOfNodes[targetNodeIndex]
+                        G = rt2.sequenceOfNodes[targetNodeIndex + 1]
+
+                        if rt1 != rt2:
+                            if rt2.load + B.demand > rt2.capacity:
+                                continue
+
+                        costAdded = self.distanceMatrix[A.ID][C.ID] + self.distanceMatrix[F.ID][B.ID] + \
+                                    self.distanceMatrix[B.ID][G.ID]
+                        costRemoved = self.distanceMatrix[A.ID][B.ID] + self.distanceMatrix[B.ID][C.ID] + \
+                                      self.distanceMatrix[F.ID][G.ID]
+
+                        originRtCostChange = self.distanceMatrix[A.ID][C.ID] - self.distanceMatrix[A.ID][B.ID] - \
+                                             self.distanceMatrix[B.ID][C.ID]
+                        targetRtCostChange = self.distanceMatrix[F.ID][B.ID] + self.distanceMatrix[B.ID][G.ID] - \
+                                             self.distanceMatrix[F.ID][G.ID]
+                        originRtTimeChange = self.timeMatrix[A.ID][C.ID] - self.timeMatrix[A.ID][B.ID] - \
+                                             self.timeMatrix[B.ID][C.ID]
+                        targetRtTimeChange = self.timeMatrix[F.ID][B.ID] + self.timeMatrix[B.ID][G.ID] - \
+                                             self.timeMatrix[F.ID][G.ID]
                         if rt1 != rt2:
                             if rt2.load + B.demand > rt2.capacity:
                                 continue
@@ -387,11 +400,12 @@ class Solver:
 
         self.sol.cost += rm.moveCost
 
-        newCost = self.objective(self.sol)
-        print(newCost,oldCost,rm.moveCost)
-        # debuggingOnly
-        if abs((newCost - oldCost) - rm.moveCost) > 0.0001:
-            print('Cost Issue')
+        # newCost = self.objective(self.sol)
+        # print(newCost,oldCost,rm.moveCost)
+        # # debuggingOnly
+        # if abs((newCost - oldCost) - rm.moveCost) > 0.0001:
+        #     print('Cost Issue')
+        self.TestSolution()
 
 
     def StoreBestRelocationMove(self, originRouteIndex, targetRouteIndex, originNodeIndex, targetNodeIndex, moveCost, originRtCostChange, targetRtCostChange, originRtTimeChange, targetRtTimeChange,  rm:RelocationMove):
@@ -413,7 +427,7 @@ class Solver:
     def VND(self):
         self.bestSolution = self.cloneSolution(self.sol)
         VNDIterator = 0
-        kmax = 2
+        kmax = 0
         rm = RelocationMove()
         sm = SwapMove()
         top = TwoOptMove()
@@ -422,7 +436,7 @@ class Solver:
 
         while k <= kmax:
             self.InitializeOperators(rm, sm, top)
-            if k == 1:
+            if k == 3:
                 self.FindBestRelocationMove(rm)
                 if rm.originRoutePosition is not None and rm.moveCost < 0:
                     self.ApplyRelocationMove(rm)
@@ -437,7 +451,7 @@ class Solver:
                     k += 1
                     print("relocation finished")
                     print("k is" +str(k))
-            elif k == 2:
+            elif k == 4:
                 self.FindBestSwapMove(sm)
                 if sm.positionOfFirstRoute is not None and sm.moveCost < 0:
                     self.ApplySwapMove(sm)
@@ -468,7 +482,18 @@ class Solver:
 
             if (self.sol.cost < self.bestSolution.cost):
                 self.bestSolution = self.cloneSolution(self.sol)
-        SolDrawer.draw('final_VND', self.bestSolution, self.allNodes)
+        print('Hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii')
+        print(self.timeMatrix[0][17] + self.timeMatrix[17][30] + self.timeMatrix[30][76]+ self.timeMatrix[76][94] + self.timeMatrix[94][99]+ self.timeMatrix[99][10])
+        for i in range(len(self.sol.routes)):
+            rt: Route = self.sol.routes[i]
+            print(rt.capacity)
+            print(rt.load)
+            print(rt.time)
+            for j in range(len(rt.sequenceOfNodes)):
+                print(rt.sequenceOfNodes[j].ID, end=' ', )
+                # print(rt.sequenceOfNodes[j].isRouted)
+            print("\n")
+        SolDrawer.draw('F_VND_2', self.bestSolution, self.allNodes)
         SolDrawer.drawTrajectory(self.searchTrajectory)
         return(self.sol)
 
@@ -600,12 +625,12 @@ class Solver:
             rt2.time += sm.targetRtTimeChange
 
         self.sol.cost += sm.moveCost
-        newCost = self.objective(self.sol)
-        print(newCost, oldCost, sm.moveCost)
-        # debuggingOnly
-        if abs((newCost - oldCost) - sm.moveCost) > 0.0001:
-            print('Cost Issue')
-        # self.TestSolution()
+        # newCost = self.objective(self.sol)
+        # print(newCost, oldCost, sm.moveCost)
+        # # debuggingOnly
+        # if abs((newCost - oldCost) - sm.moveCost) > 0.0001:
+        #     print('Cost Issue')
+        self.TestSolution()
 
 
     def ReportSolution(self, sol):
@@ -687,18 +712,26 @@ class Solver:
                         originRtTimeChange = 0
                         targetRtTimeChange = 0
 
+                        rt1FirstSegmentLoad = 0
+                        rt2FirstSegmentLoad = 0
+                        rt1SecondSegmentLoad = 0
+                        rt2SecondSegmentLoad = 0
+
                         if rt1 == rt2:
                             if nodeInd1 == 0 and nodeInd2 == len(rt1.sequenceOfNodes) - 2: #-2 to -1
                                 continue
                             costAdded = self.distanceMatrix[A.ID][K.ID] + self.distanceMatrix[B.ID][L.ID]
                             costRemoved = self.distanceMatrix[A.ID][B.ID] + self.distanceMatrix[K.ID][L.ID]
                             moveCost = costAdded - costRemoved
+
                             originRtCostChange = costAdded - costRemoved
                             originRtTimeChange = self.timeMatrix[A.ID][K.ID] + self.timeMatrix[B.ID][L.ID] - \
                                                  self.timeMatrix[A.ID][B.ID] - self.timeMatrix[K.ID][L.ID]
 
                             if rt1.time + originRtTimeChange > 3.5:
                                 continue
+                            oririnRTLoad = rt1.load
+                            targetRTLoad = rt2.load
                         else:
                             if nodeInd1 == 0 and nodeInd2 == 0:
                                 continue
@@ -707,9 +740,35 @@ class Solver:
 
                             if self.CapacityIsViolated(rt1, nodeInd1, rt2, nodeInd2):
                                 continue
+                            ############################################################################
+                            # rt1FirstSegmentLoad = 0
+                            for i in range(0, nodeInd1 + 1):
+                                n = rt1.sequenceOfNodes[i]
+                                rt1FirstSegmentLoad += n.demand
+                            rt1SecondSegmentLoad = rt1.load - rt1FirstSegmentLoad
 
+                            # rt2FirstSegmentLoad = 0
+                            for i in range(0, nodeInd2 + 1):
+                                n = rt2.sequenceOfNodes[i]
+                                rt2FirstSegmentLoad += n.demand
+                            rt2SecondSegmentLoad = rt2.load - rt2FirstSegmentLoad
+
+                            if (rt1FirstSegmentLoad + rt2SecondSegmentLoad > rt1.capacity):
+                                continue
+                            if (rt2FirstSegmentLoad + rt1SecondSegmentLoad > rt2.capacity):
+                                continue
+
+                            oririnRTLoad = rt1FirstSegmentLoad + rt2SecondSegmentLoad
+                            targetRTLoad = rt2FirstSegmentLoad + rt1SecondSegmentLoad
+                            ############################################################################
                             originRtCostChange = 0
                             originRtTimeChange = 0
+
+                            # A = rt1.sequenceOfNodes[nodeInd1]
+                            # B = rt1.sequenceOfNodes[nodeInd1 + 1]
+                            # K = rt2.sequenceOfNodes[nodeInd2]
+                            # L = rt2.sequenceOfNodes[nodeInd2 + 1]
+
                             for i in range(0, nodeInd1): #time from 0 to A in rt1
                                 index1 = rt1.sequenceOfNodes[i]
                                 index2 = rt1.sequenceOfNodes[i+1]
@@ -754,7 +813,10 @@ class Solver:
                             moveCost = costAdded - costRemoved
                             
                         if moveCost < top.moveCost and abs(moveCost) > 0.0001:
-                            self.StoreBestTwoOptMove(rtInd1, rtInd2, nodeInd1, nodeInd2, moveCost, originRtCostChange, targetRtCostChange, originRtTimeChange, targetRtTimeChange, top)
+                            oririnRTLoad = rt1FirstSegmentLoad + rt2SecondSegmentLoad
+                            targetRTLoad = rt2FirstSegmentLoad + rt1SecondSegmentLoad
+                            self.StoreBestTwoOptMove(rtInd1, rtInd2, nodeInd1, nodeInd2, moveCost, originRtCostChange, targetRtCostChange, originRtTimeChange, targetRtTimeChange,
+                                                     oririnRTLoad, targetRTLoad,top)
 
     def CapacityIsViolated(self, rt1, nodeInd1, rt2, nodeInd2):
 
@@ -777,7 +839,7 @@ class Solver:
 
         return False
 
-    def StoreBestTwoOptMove(self, rtInd1, rtInd2, nodeInd1, nodeInd2, moveCost, originRtCostChange, targetRtCostChange, originRtTimeChange, targetRtTimeChange, top):
+    def StoreBestTwoOptMove(self, rtInd1, rtInd2, nodeInd1, nodeInd2, moveCost, originRtCostChange, targetRtCostChange, originRtTimeChange, targetRtTimeChange, oririnRTLoad, targetRTLoad,top):
         top.positionOfFirstRoute = rtInd1
         top.positionOfSecondRoute = rtInd2
         top.positionOfFirstNode = nodeInd1
@@ -787,6 +849,8 @@ class Solver:
         top.targetRtCostChange = targetRtCostChange
         top.originRtTimeChange = originRtTimeChange
         top.targetRtTimeChange = targetRtTimeChange
+        top.oririnRTLoad = oririnRTLoad
+        top.targetRTLoad = targetRTLoad
 
     def ApplyTwoOptMove(self, top):
         oldCost = self.objective(self.sol)
@@ -818,27 +882,33 @@ class Solver:
             rt1.sequenceOfNodes.extend(relocatedSegmentOfRt2)
             rt2.sequenceOfNodes.extend(relocatedSegmentOfRt1)
 
-            self.UpdateRouteCostAndLoad(rt1)
-            self.UpdateRouteCostAndLoad(rt2)
+            self.UpdateRouteCostAndLoadAndTime(rt1)
+            self.UpdateRouteCostAndLoadAndTime(rt2)
 
         self.sol.cost += top.moveCost
 
-        newCost = self.objective(self.sol)
-        print(newCost, oldCost, top.moveCost)
-        # debuggingOnly
-        if abs((newCost - oldCost) - top.moveCost) > 0.0001:
-            print('Cost Issue')
-        # self.TestSolution()
+        # newCost = self.objective(self.sol)
+        # print(newCost, oldCost, top.moveCost)
+        # # debuggingOnly
+        # if abs((newCost - oldCost) - top.moveCost) > 0.0001:
+        #     print('Cost Issue')
+        self.TestSolution()
 
-    def UpdateRouteCostAndLoad(self, rt: Route):
+    def UpdateRouteCostAndLoadAndTime(self, rt: Route):
         tc = 0
         tl = 0
+        tt = 0
         for i in range(0, len(rt.sequenceOfNodes) - 1):
             A = rt.sequenceOfNodes[i]
             B = rt.sequenceOfNodes[i+1]
             tc += self.distanceMatrix[A.ID][B.ID]
+            tt += self.timeMatrix[A.ID][B.ID]
             tl += A.demand
         rt.load = tl
+        lastNodeOfRoute = rt.sequenceOfNodes[-1]
+        rt.load += lastNodeOfRoute.demand
+
+        rt.time = tt
         rt.cost = tc
 
     def TestSolution(self):
@@ -852,6 +922,8 @@ class Solver:
                 B = rt.sequenceOfNodes[n + 1]
                 rtCost += self.distanceMatrix[A.ID][B.ID]
                 rtLoad += A.demand
+            lastNodeOfRoute = rt.sequenceOfNodes[-1]
+            rtLoad += lastNodeOfRoute.demand
             if abs(rtCost - rt.cost) > 0.0001:
                 print ('Route Cost problem')
             if rtLoad != rt.load:
@@ -859,8 +931,12 @@ class Solver:
 
             totalSolCost += rt.cost
 
-        if abs(totalSolCost - self.sol.cost) > 0.0001:
+        CurrentSolutionCost = self.bestSolution.cost - self.sol.cost
+
+        if abs(totalSolCost - self.objective(self.sol)) > 0.0001:
             print('Solution Cost problem')
+            print(totalSolCost)
+            print(self.sol.cost)
 
     def IdentifyBestInsertionAllPositions(self, bestInsertion, rt):
         for i in range(0, len(self.customers)):
@@ -891,3 +967,4 @@ class Solver:
         self.sol.cost += insertion.cost
         rt.load += insCustomer.demand
         insCustomer.isRouted = True
+
