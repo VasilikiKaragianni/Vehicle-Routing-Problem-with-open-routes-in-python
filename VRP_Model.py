@@ -13,7 +13,7 @@ class Model:
 
     def BuildModel(self):
         # birthday 08/02/1999
-        birthday = 16112000
+        birthday = 8021999
         random.seed(birthday)
         all_nodes = []
         customers = []
