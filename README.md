@@ -20,3 +20,5 @@ At last, we decide to give our algorithm a final touch by applying a modifiled v
 After the application of this algorithm our objective dropped at distance = 1267 and the best combination was S-2-R.
 
 We hope this project has proven useful! 
+Thanks for reading!
+
